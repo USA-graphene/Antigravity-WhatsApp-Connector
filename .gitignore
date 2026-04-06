@@ -6,6 +6,7 @@ config.yaml
 
 # Binary output
 bin/
+connector
 
 # OS files
 .DS_Store
