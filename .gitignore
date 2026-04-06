@@ -1,0 +1,22 @@
+# Data directory
+data/
+
+# Config with secrets
+config.yaml
+
+# Binary output
+bin/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Go
+vendor/

@@ -1,0 +1,105 @@
+# Antigravity WhatsApp Connector - Configuration
+# Copy this file to config.yaml and edit with your values.
+
+whatsapp:
+  # SQLite database for WhatsApp session persistence
+  session_db: "./data/whatsapp.db"
+
+auth:
+  # Phone numbers allowed to interact (E.164 format with country code)
+  allowed_phones:
+    - "+1234567890"
+  # PIN required on first message after restart or session expiry
+  pin: "123456"
+  # How long a session stays valid after last activity
+  session_ttl: "8h"
+  # Max failed auth attempts before lockout (resets on success)
+  max_failed_attempts: 5
+
+gemini:
+  # API key - preferably set via GEMINI_API_KEY env var instead
+  api_key: ""
+  # Model to use: gemini-2.5-flash (fast) or gemini-2.5-pro (powerful)
+  model: "gemini-2.5-flash"
+  # Max output tokens
+  max_tokens: 8192
+  # Temperature (0.0 = deterministic, 1.0 = creative)
+  temperature: 0.7
+
+workspace:
+  # Root directory for all file operations (absolute path)
+  # Default: current working directory
+  root: "."
+
+tools:
+  read_file:
+    enabled: true
+    max_file_size: "1MB"
+
+  write_file:
+    enabled: true
+    require_confirmation: true
+    backup_original: true
+
+  run_command:
+    enabled: true
+    # Mode: "allowlist" (safest), "blocklist", or "unrestricted"
+    mode: "allowlist"
+    allowlist:
+      - "go build"
+      - "go test"
+      - "go run"
+      - "go mod"
+      - "go fmt"
+      - "go vet"
+      - "git status"
+      - "git diff"
+      - "git log"
+      - "git add"
+      - "git commit"
+      - "git push"
+      - "git pull"
+      - "git branch"
+      - "git checkout"
+      - "ls"
+      - "cat"
+      - "head"
+      - "tail"
+      - "grep"
+      - "find"
+      - "wc"
+      - "make"
+      - "which"
+      - "pwd"
+      - "echo"
+      - "env"
+      - "tree"
+    blocklist:
+      - "rm -rf"
+      - "sudo"
+      - "chmod"
+      - "chown"
+      - "mkfs"
+      - "dd"
+      - "curl | sh"
+      - "wget | sh"
+    timeout: "30s"
+    max_output: "32KB"
+
+  list_directory:
+    enabled: true
+
+  search_web:
+    enabled: false
+
+rate_limit:
+  # Messages per minute per user
+  per_user: 10
+  # Messages per minute globally
+  global: 60
+
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # Audit log file path
+  audit_file: "./data/audit.log"
