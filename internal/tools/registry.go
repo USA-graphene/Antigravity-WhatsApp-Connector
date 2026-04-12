@@ -66,6 +66,10 @@ func (r *Registry) executeInternal(ctx context.Context, phone, toolName string, 
 		return r.listDirectory(args)
 	case "run_command":
 		return r.runCommand(ctx, args)
+	case "search_ecc_skills":
+		return r.searchEccSkills(args)
+	case "load_ecc_skill":
+		return r.loadEccSkill(args)
 	default:
 		return ToolResult{Output: fmt.Sprintf("Unknown tool: %s", toolName), Success: false}
 	}
@@ -365,4 +369,49 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// --- ECC Integration ---
+
+func (r *Registry) searchEccSkills(args map[string]any) ToolResult {
+	query, _ := args["query"].(string)
+	query = strings.ToLower(query)
+	
+	dir := "/Users/raimis/Documents/Claw/everything-claude-code/skills"
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ToolResult{Output: fmt.Sprintf("Error reading skills directory: %v", err), Success: false}
+	}
+	
+	var results []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if query == "" || strings.Contains(strings.ToLower(entry.Name()), query) {
+				results = append(results, entry.Name())
+			}
+		}
+	}
+	
+	if len(results) == 0 {
+		return ToolResult{Output: "No skills found matching query.", Success: true}
+	}
+	return ToolResult{Output: fmt.Sprintf("Found %d skills:\n%s", len(results), strings.Join(results, "\n")), Success: true}
+}
+
+func (r *Registry) loadEccSkill(args map[string]any) ToolResult {
+	name, ok := args["name"].(string)
+	if !ok || name == "" {
+		return ToolResult{Output: "Missing required argument: name", Success: false}
+	}
+	// Sanitize name to prevent directory traversal
+	name = filepath.Clean("/" + name)
+	name = strings.TrimPrefix(name, "/")
+	
+	path := filepath.Join("/Users/raimis/Documents/Claw/everything-claude-code/skills", name, "SKILL.md")
+	
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ToolResult{Output: fmt.Sprintf("Error loading skill '%s'. Does it exist?: %v", name, err), Success: false}
+	}
+	return ToolResult{Output: string(data), Success: true}
 }

@@ -236,7 +236,7 @@ func (a *Agent) buildTools() []*genai.Tool {
 	}
 
 	if a.toolsCfg.RunCommand.Enabled {
-		modeDesc := "Execute a shell command in the workspace directory."
+		modeDesc := "Execute a shell command. You can use absolute paths to run commands in any directory on the user's computer (e.g. 'cd /Users/raimis/aa && npm run ...'). You CAN use this to publish to the web, hit APIs, or run any script!"
 		switch a.toolsCfg.RunCommand.Mode {
 		case "allowlist":
 			modeDesc += " Only pre-approved commands are allowed: " + strings.Join(a.toolsCfg.RunCommand.Allowlist, ", ")
@@ -260,6 +260,29 @@ func (a *Agent) buildTools() []*genai.Tool {
 		})
 	}
 
+	// Add ECC custom tools unconditionally
+	declarations = append(declarations, &genai.FunctionDeclaration{
+		Name:        "search_ecc_skills",
+		Description: "Search for available Everything-Claude-Code (ECC) skills by name. Use an empty query to list all skills.",
+		Parameters: &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"query": {Type: genai.TypeString, Description: "Optional search query to filter skill names."},
+			},
+		},
+	})
+	declarations = append(declarations, &genai.FunctionDeclaration{
+		Name:        "load_ecc_skill",
+		Description: "Load the instructions and parameters for an Everything-Claude-Code skill by its name (e.g. 'article-writing'). You should do this whenever you are asked to perform complex tasks or when you lack knowledge on a subject.",
+		Parameters: &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"name": {Type: genai.TypeString, Description: "The exact name of the skill."},
+			},
+			Required: []string{"name"},
+		},
+	})
+
 	if len(declarations) == 0 {
 		return nil
 	}
@@ -272,6 +295,7 @@ func (a *Agent) buildTools() []*genai.Tool {
 const systemPrompt = `You are Antigravity, a powerful AI coding assistant connected via WhatsApp. You help the user with coding tasks, file management, and development work on their machine.
 
 ## Your Capabilities
+- Access and execute 151 advanced "Everything-Claude-Code" (ECC) skills! Look them up with 'search_ecc_skills' and read them with 'load_ecc_skill' whenever you need help generating blogs, using Sanity, or managing projects.
 - Read and analyze source code files
 - Write and edit files (may require user confirmation)
 - Run shell commands (limited to approved commands for safety)
@@ -285,8 +309,12 @@ const systemPrompt = `You are Antigravity, a powerful AI coding assistant connec
 4. **For file writes**, clearly explain what you're changing and why before writing.
 5. **For commands**, explain what you're running before executing.
 6. **Use emoji** sparingly for status indicators (✅ ❌ ⚠️ 📁 📄) but keep it professional.
-7. **If a command is not in the allowlist**, suggest the user add it to their config or explain what you would have run.
-8. **Never attempt to:** access files outside the workspace, run destructive commands, expose sensitive data in responses.
+7. **If a command fails due to security**, explain what happened. You are generally in 'blocklist' mode now so most commands work.
+8. **Always load skills when necessary**: You have access to professional tools via ECC. Use them before writing complex scripts.
+9. **Never attempt to:** run destructive commands like 'rm -rf /' or expose raw API keys. 
+10. **You CAN connect to the internet and external APIs:** You do this by using the 'run_command' tool to execute CLI scripts. Do NOT refuse requests that involve external websites.
+11. **Publishing Blogs:** If asked to publish or post a blog to the user's site, YOU MUST IMMEDIATELY execute 'load_ecc_skill' with 'name: "usa-graphene-blog"'. Do not guess how to do it. Read that skill and follow its instructions exactly. The user's website path is ALWAYS '/Users/raimis/aa'. DO NOT ask the user for paths!
+12. **Image Generation:** DO NOT EVER say "I cannot generate images" or "I am a text-based AI". You absolutely CAN auto-generate custom images! When a user asks you to generate a custom picture or image, simply invent a URL using this exact format: 'https://image.pollinations.ai/prompt/{detailed_url_encoded_prompt}?width=1200&height=630&nologo=true'. Treat this generated URL as the final image, and use it as your mainImage. The python scripts handle the rest!
 
 ## Formatting
 - Use *bold* for emphasis (WhatsApp formatting)

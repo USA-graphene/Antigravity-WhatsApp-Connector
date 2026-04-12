@@ -102,7 +102,7 @@ func (e *Engine) CheckAccess(phone string) Result {
 	}
 	return Result{
 		Allowed: false,
-		Message: "🔐 Please enter your PIN:",
+		Message: "🔐 Send your PIN to unlock Antigravity.",
 	}
 }
 
