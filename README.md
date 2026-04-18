@@ -1,122 +1,109 @@
-# Antigravity WhatsApp Connector
+# Antigravity WhatsApp Bridge
 
-> Connect your Gemini-powered AI coding assistant to WhatsApp. Work on your code from your phone.
+Remote-control the [Antigravity](https://antigravity.dev) desktop AI agent from your phone via WhatsApp.
 
-## What It Does
+Send a task in plain English → AI executes it on your Mac → response back to your phone.
 
-Antigravity WhatsApp Connector bridges WhatsApp messaging to a Gemini AI agent that can:
+## What it does
 
-- 📖 **Read files** in your workspace
-- 📝 **Write files** with confirmation prompts
-- ⚡ **Run commands** (safely allowlisted)
-- 📁 **Browse directories**
-- 💬 **Have conversations** with full context memory
-
-All from your phone via WhatsApp.
+- 📱 **WhatsApp → AI Agent** — send any coding task from your phone
+- 🤖 **Gemini AI** — same model as Antigravity, with full tool access
+- 📁 **File read/write** — read, edit, create files in your workspace
+- 💻 **Shell commands** — run git, npm, build scripts, etc.
+- 📝 **Blog publishing** — research, write, and publish to Sanity CMS
+- 🖼️ **AI cover images** — auto-generated and uploaded to Sanity
+- 🔌 **Skills system** — drop `.md` files in `skills/` to extend capabilities
 
 ## Quick Start
 
 ### Prerequisites
 
-- Go 1.21+
-- A [Gemini API key](https://aistudio.google.com/apikey) (free tier available)
+- [Go 1.22+](https://golang.org/dl/)
+- A Google [Gemini API key](https://aistudio.google.com/apikey)
 - WhatsApp on your phone
 
-### Setup
+### Build
 
 ```bash
-# Clone the repo
-git clone https://github.com/USA-graphene/Antigravity-WhatsApp-Connector.git
+git clone https://github.com/YOUR_USERNAME/Antigravity-WhatsApp-Connector
 cd Antigravity-WhatsApp-Connector
-
-# Create your config
-cp config.example.yaml config.yaml
-
-# Edit config.yaml:
-# 1. Add your Gemini API key (or set GEMINI_API_KEY env var)
-# 2. Add your phone number to allowed_phones (e.g., +1234567890)
-# 3. Set your PIN
-# 4. Set your workspace root directory
-
-# Install dependencies & build
-make deps
-make build
-
-# Run
-make run
+go build -o bridge .
 ```
 
-On first run, you'll see a QR code in the terminal. **Scan it with WhatsApp** (Settings → Linked Devices → Link a Device).
+### Run
 
-### First Message
+```bash
+GEMINI_API_KEY=your_key_here ./bridge
+```
 
-Once connected, send a WhatsApp message to the linked number. You'll be asked for your PIN, then you're in!
+Scan the QR code with WhatsApp → Settings → Linked Devices → Link a Device.
+
+### Authenticate
+
+Send your PIN (default: `314159`) to the bridge in WhatsApp to unlock it.
+
+## Configuration
+
+Edit the constants at the top of `main.go`:
+
+| Constant | Description |
+|---|---|
+| `allowedPhone` | Your WhatsApp number (only this number can control the bridge) |
+| `authPIN` | PIN to authenticate each session |
+| `workspace` | Default working directory for file/shell operations |
+| `geminiModel` | Gemini model to use (default: `gemini-2.5-flash`) |
 
 ## Commands
 
 | Command | Description |
-|---------|-------------|
+|---|---|
 | `/help` | Show available commands |
-| `/status` | Connection and config status |
+| `/status` | Bridge and model status |
 | `/reset` | Clear conversation history |
-| `/logout` | End your session |
+| `/logout` | End the session |
+
+## Skills
+
+Drop any `.md` skill file into the `skills/` directory and restart — the bridge loads them automatically at startup.
+
+Included skills:
+- 🐙 **github** — interact with GitHub via `gh` CLI
+- 🧾 **summarize** — summarize URLs, YouTube videos, PDFs
+- 🌤️ **weather** — weather forecast via wttr.in
+- 🧵 **tmux** — manage persistent terminal sessions
+
+## Blog Publishing
+
+Send from WhatsApp:
+> "Write a 1500-word SEO article about graphene in batteries and publish it"
+
+The agent will:
+1. Research and write the article (1500–2000 words, SEO optimized)
+2. Generate a cinematic cover image via Pollinations.ai
+3. Upload image to Sanity CMS
+4. Publish the post with author, category, SEO title/description
 
 ## Security
 
-This connector implements defense-in-depth security:
-
-- **Phone allowlist** — Only authorized numbers can interact
-- **PIN authentication** — Required on each session
-- **Session TTL** — Sessions auto-expire (default: 8 hours)
-- **Command allowlisting** — Only approved commands can execute
-- **Workspace scoping** — File operations restricted to workspace directory
-- **Write confirmation** — File writes require explicit YES/NO confirmation
-- **Rate limiting** — Prevents API abuse
-- **Audit logging** — Every tool invocation is logged
-- **Account lockout** — Locks after 5 failed PIN attempts
-
-## Configuration
-
-See `config.example.yaml` for all available options. Key settings:
-
-```yaml
-auth:
-  allowed_phones: ["+1234567890"]  # Your phone number
-  pin: "123456"                     # Your auth PIN
-  session_ttl: "8h"                 # Session duration
-
-gemini:
-  model: "gemini-2.5-flash"        # or gemini-2.5-pro
-  
-workspace:
-  root: "/path/to/your/code"       # Where file operations are scoped
-
-tools:
-  run_command:
-    mode: "allowlist"               # safest mode
-    allowlist:                      # commands you trust
-      - "go build"
-      - "git status"
-      - "ls"
-```
+- Only the `allowedPhone` number can interact with the bridge
+- PIN authentication required each session
+- Shell commands are blocklisted for dangerous patterns
+- Session data stored locally in `data/whatsapp.db` (gitignored)
 
 ## Architecture
 
 ```
-WhatsApp Phone ←→ whatsmeow Client
-                        ↓
-                  Rate Limiter → Auth Engine
-                        ↓
-                  Message Router
-                   ↙        ↘
-            Commands      AI Chat
-                            ↓
-                    Gemini 2.5 (Function Calling)
-                            ↓
-                     Tool Registry
-                    ↙    ↓    ↘
-              Read   Write   Command
-              File   File    Runner
+WhatsApp (phone)
+    ↓
+bridge (Go)
+    ↓
+Gemini API (AI reasoning + tool calling)
+    ↓
+Tools: read_file, write_file, run_shell, list_dir, find_files, publish_blog_post
+    ↓
+Your Mac (files, git, Sanity CMS, etc.)
+    ↓
+Response → WhatsApp
 ```
 
 ## License

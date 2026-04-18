@@ -1,12 +1,13 @@
-# Data directory
+# Data directory (WhatsApp session DB, QR codes)
 data/
 
 # Config with secrets
 config.yaml
 
-# Binary output
-bin/
+# Compiled binary
+bridge
 connector
+bin/
 
 # OS files
 .DS_Store
@@ -19,5 +20,5 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Go
+# Go vendor
 vendor/
