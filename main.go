@@ -34,8 +34,8 @@ import (
 // ── Config ───────────────────────────────────────────────────────────────────
 
 const (
-	allowedPhone = "+18035046509"
-	authPIN      = "314159"
+	allowedPhone = "+18035046509" // override with ALLOWED_PHONE env var
+	authPIN      = "314159"       // override with AUTH_PIN env var
 	workspace    = "/Users/raimis/aa"
 	sessionDB    = "./data/whatsapp.db"
 	geminiModel  = "gemini-2.5-flash"
@@ -124,15 +124,17 @@ func loadSkills(dir string) string {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Bridge struct {
-	wm            *whatsmeow.Client
-	geminiClient  *genai.Client
-	model         *genai.GenerativeModel
-	sessions      map[string]*genai.ChatSession
-	sessionsMu    sync.Mutex
-	authenticated map[string]bool
-	authMu        sync.RWMutex
-	ownJID        string
-	log           *slog.Logger
+	wm              *whatsmeow.Client
+	geminiClient    *genai.Client
+	model           *genai.GenerativeModel
+	sessions        map[string]*genai.ChatSession
+	sessionsMu      sync.Mutex
+	authenticated   map[string]bool
+	authMu          sync.RWMutex
+	ownJID          string
+	sanityToken     string
+	sanityProjectId string
+	log             *slog.Logger
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
@@ -141,10 +143,20 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 	log := slog.Default()
 
+	// Validate required env vars
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		fmt.Fprintln(os.Stderr, "ERROR: GEMINI_API_KEY environment variable is required")
+		fmt.Fprintln(os.Stderr, "ERROR: GEMINI_API_KEY env var required")
 		os.Exit(1)
+	}
+	sanityToken := os.Getenv("SANITY_API_TOKEN")
+	if sanityToken == "" {
+		fmt.Fprintln(os.Stderr, "ERROR: SANITY_API_TOKEN env var required")
+		os.Exit(1)
+	}
+	sanityProjectId := os.Getenv("SANITY_PROJECT_ID")
+	if sanityProjectId == "" {
+		sanityProjectId = "t9t7is4j" // default, override with SANITY_PROJECT_ID
 	}
 
 	fmt.Println()
@@ -182,11 +194,13 @@ func main() {
 	}
 
 	b := &Bridge{
-		geminiClient:  geminiClient,
-		model:         model,
-		sessions:      make(map[string]*genai.ChatSession),
-		authenticated: make(map[string]bool),
-		log:           log,
+		geminiClient:    geminiClient,
+		model:           model,
+		sessions:        make(map[string]*genai.ChatSession),
+		authenticated:   make(map[string]bool),
+		sanityToken:     sanityToken,
+		sanityProjectId: sanityProjectId,
+		log:             log,
 	}
 
 	// ── Init WhatsApp ────────────────────────────────────────────────────────
@@ -671,8 +685,8 @@ func (b *Bridge) toolPublishBlogPost(title, slug, excerpt, body, imagePrompt, ca
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	sanityToken := "REDACTED"
-	projectId := "t9t7is4j"
+	sanityToken := b.sanityToken
+	projectId := b.sanityProjectId
 
 	// 1. Fetch image from pollinations.ai
 	imageReqUrl := fmt.Sprintf("https://image.pollinations.ai/prompt/%s?nologo=true&width=1024&height=1024", neturl.QueryEscape(imagePrompt))

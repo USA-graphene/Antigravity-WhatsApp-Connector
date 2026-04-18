@@ -1,7 +1,8 @@
 # Data directory (WhatsApp session DB, QR codes)
 data/
 
-# Config with secrets
+# Secrets — never commit these
+.env
 config.yaml
 
 # Compiled binary
